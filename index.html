@@ -4,30 +4,606 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evade</title>
-    <!-- <link rel="stylesheet" href="style.css"> -->
+    <link rel="stylesheet" href="bootstrap/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <script src="bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="js/phaser.min.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
+            background-color: #000033;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
             overflow: hidden;
-        }
-        #game-container {
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        
+        .menu-container {
+            text-align: center;
             width: 100%;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
+            max-width: 800px;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .game-title {
+            font-size: 6rem;
+            font-weight: 900;
+            color: #ff0000;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.8);
+            margin-bottom: 2rem;
+            letter-spacing: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        .menu-button {
+            display: block;
+            width: 80%;
+            max-width: 400px;
+            margin: 1rem auto;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            text-align: center;
+            background-color: rgba(102, 51, 204, 0.6);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            border: 2px solid #9966cc;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .menu-button:hover {
+            transform: scale(1.05);
+            background-color: rgba(102, 51, 204, 0.8);
+            box-shadow: 0 0 15px #9966cc;
+            color: white;
+        }
+        
+        .menu-button:hover::after {
+            left: 100%;
+        }
+        
+        .soon-tag {
+            font-size: 0.9rem;
+            background-color: #ff3333;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 10px;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            transform: rotate(10deg);
+            box-shadow: 0 0 8px #ff0000;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid white;
+            animation: pulseSoon 1.5s infinite;
+            z-index: 100;
+        }
+        
+        @keyframes pulseSoon {
+            0% { transform: rotate(10deg) scale(1); }
+            50% { transform: rotate(10deg) scale(1.1); }
+            100% { transform: rotate(10deg) scale(1); }
+        }
+        
+        .particle {
+            position: absolute;
+            background-color: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .comet {
+            position: absolute;
+            width: 3px;
+            height: 80px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(102,102,255,0.8));
+            transform: rotate(45deg);
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .hexagon {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(102, 51, 204, 0.2);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .grid-line {
+            position: absolute;
+            background-color: rgba(102, 51, 204, 0.15);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .horizontal-grid {
+            width: 100%;
+            height: 1px;
+        }
+        
+        .vertical-grid {
+            width: 1px;
+            height: 100%;
+        }
+        
+        .energy-orb {
+            position: absolute;
+            background: radial-gradient(circle, rgba(102,204,255,0.8) 0%, rgba(102,102,255,0) 70%);
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+            box-shadow: 0 0 15px rgba(102,204,255,0.5);
+        }
+        
+        .dust-particle {
+            position: absolute;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(1px);
+        }
+        
+        .menu-footer {
+            margin-top: 3rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 4rem;
+            }
+            .menu-button {
+                padding: 0.8rem 1.5rem;
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Mouse follower particle styles */
+        .mouse-follower {
+            position: fixed;
+            pointer-events: none;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(153, 102, 255, 0.7) 0%, rgba(102, 51, 204, 0) 70%);
+            box-shadow: 0 0 15px rgba(153, 102, 255, 0.5);
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            filter: blur(1px);
+            opacity: 0.8;
+            transition: transform 0.1s ease-out;
         }
     </style>
-    <!-- <link rel="stylesheet" href="frameworks/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="frameworks/bootstrap.min.css">
-    <script src="frameworks/bootstrap.bundle.min.js"></script> -->
-    <script src="js/phaser.min.js"></script>
 </head>
 <body>
-    <div id="game-container"></div>
-    <script src="js/script.js"></script>
+    <div class="menu-container">
+        <h1 class="game-title">EVADE</h1>
+        
+        <a href="survival/survival.html" class="menu-button">
+            SURVIVAL MODE
+            <span class="bi bi-stopwatch ms-2"></span>
+        </a>
+        
+        <a href="#" class="menu-button position-relative">
+            LEVELS MODE
+            <span class="bi bi-layers ms-2"></span>
+            <span class="soon-tag">COMING SOON</span>
+        </a>
+        
+        <a href="#" class="menu-button" id="how-to-play">
+            HOW TO PLAY
+            <span class="bi bi-question-circle ms-2"></span>
+        </a>
+        
+        <div class="menu-footer">
+            &copy; 2025 EVADE Game | Use mouse to control, escape from enemies! (I'm so cool)
+        </div>
+    </div>
+    
+    <!-- Modal for How To Play -->
+    <div class="modal fade" id="howToPlayModal" tabindex="-1" aria-labelledby="howToPlayModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="howToPlayModalLabel">How To Play</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5>OBJECTIVE</h5>
+                    <p>Survive as long as possible by avoiding enemy squares.</p>
+                    
+                    <h5>CONTROLS</h5>
+                    <ul>
+                        <li>Move your player with the mouse</li>
+                        <li>Press ESC to pause the game</li>
+                    </ul>
+                    
+                    <h5>TIPS</h5>
+                    <ul>
+                        <li>You are immune for the first 3 seconds</li>
+                        <li>Try to find open spaces between enemies</li>
+                        <li>Higher difficulties have more enemies</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Create animated particles in the background
+        function createParticles() {
+            const numParticles = 50;
+            const numComets = 15;
+            const numHexagons = 20;
+            const numGridLines = 16;
+            const numOrbs = 8;
+            const numDustParticles = 30;
+            
+            // Create standard particles
+            for (let i = 0; i < numParticles; i++) {
+                createAndAnimateParticle();
+            }
+            
+            // Create comets
+            for (let i = 0; i < numComets; i++) {
+                createAndAnimateComet();
+            }
+            
+            // Create hexagons
+            for (let i = 0; i < numHexagons; i++) {
+                createAndAnimateHexagon();
+            }
+            
+            // Create grid lines
+            for (let i = 0; i < numGridLines; i++) {
+                if (i < numGridLines / 2) {
+                    createAndAnimateGrid(true); // horizontal
+                } else {
+                    createAndAnimateGrid(false); // vertical
+                }
+            }
+            
+            // Create energy orbs
+            for (let i = 0; i < numOrbs; i++) {
+                createAndAnimateEnergyOrb();
+            }
+            
+            // Create dust particles
+            for (let i = 0; i < numDustParticles; i++) {
+                createAndAnimateDustParticle();
+            }
+        }
+        
+        function createAndAnimateParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            const size = Math.random() * 10 + 2;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            
+            // Random position
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.top = Math.random() * 100 + 'vh';
+            
+            // Random opacity
+            particle.style.opacity = Math.random() * 0.5 + 0.1;
+            
+            document.body.appendChild(particle);
+            
+            // Animate particles
+            animateParticle(particle);
+        }
+        
+        function animateParticle(particle) {
+            const duration = Math.random() * 10000 + 5000;
+            const xPos = Math.random() * 100;
+            const yPos = -20; // Start above the viewport
+            
+            particle.style.transition = `all ${duration}ms linear`;
+            
+            // Set initial position
+            particle.style.transform = `translate(${xPos}vw, ${yPos}vh)`;
+            
+            // Wait for the next frame to start animating
+            setTimeout(() => {
+                // Move down
+                particle.style.transform = `translate(${xPos}vw, 120vh)`;
+                
+                // Reset the particle when animation completes
+                setTimeout(() => {
+                    particle.style.transition = 'none';
+                    particle.style.transform = `translate(${Math.random() * 100}vw, ${yPos}vh)`;
+                    animateParticle(particle);
+                }, duration);
+            }, 50);
+        }
+        
+        function createAndAnimateComet() {
+            const comet = document.createElement('div');
+            comet.classList.add('comet');
+            document.body.appendChild(comet);
+            animateComet(comet);
+        }
+        
+        function animateComet(comet) {
+            const duration = Math.random() * 6000 + 4000;
+            const size = Math.random() * 100 + 50;
+            const rotation = Math.random() * 60 + 30; // 30 to 90 degrees
+            
+            comet.style.height = `${size}px`;
+            comet.style.transform = `rotate(${rotation}deg)`;
+            
+            // Start from random position at the top
+            const startX = Math.random() * 120 - 10; // -10% to 110%
+            const startY = -20;
+            
+            // Calculate end position based on angle
+            const angle = (rotation - 90) * (Math.PI / 180);
+            const distance = window.innerHeight * 1.5;
+            const endX = startX + Math.cos(angle) * distance;
+            const endY = startY + Math.sin(angle) * distance;
+            
+            comet.style.transition = 'none';
+            comet.style.left = `${startX}vw`;
+            comet.style.top = `${startY}vh`;
+            
+            setTimeout(() => {
+                comet.style.transition = `all ${duration}ms linear`;
+                comet.style.left = `${endX}vw`;
+                comet.style.top = `${endY}vh`;
+                
+                setTimeout(() => {
+                    animateComet(comet);
+                }, duration);
+            }, 50);
+        }
+        
+        function createAndAnimateHexagon() {
+            const hexagon = document.createElement('div');
+            hexagon.classList.add('hexagon');
+            
+            const size = Math.random() * 60 + 20;
+            hexagon.style.width = `${size}px`;
+            hexagon.style.height = `${size}px`;
+            
+            document.body.appendChild(hexagon);
+            animateHexagon(hexagon);
+        }
+        
+        function animateHexagon(hexagon) {
+            const duration = Math.random() * 15000 + 10000;
+            const startX = Math.random() * 100;
+            const startY = -20;
+            const rotation = Math.random() * 360;
+            
+            hexagon.style.transition = 'none';
+            hexagon.style.left = `${startX}vw`;
+            hexagon.style.top = `${startY}vh`;
+            hexagon.style.opacity = Math.random() * 0.3 + 0.1;
+            
+            setTimeout(() => {
+                hexagon.style.transition = `all ${duration}ms linear`;
+                hexagon.style.transform = `rotate(${rotation}deg)`;
+                hexagon.style.left = `${startX + (Math.random() * 20 - 10)}vw`;
+                hexagon.style.top = '120vh';
+                
+                setTimeout(() => {
+                    animateHexagon(hexagon);
+                }, duration);
+            }, 50);
+        }
+        
+        function createAndAnimateGrid(isHorizontal) {
+            const grid = document.createElement('div');
+            grid.classList.add('grid-line');
+            
+            if (isHorizontal) {
+                grid.classList.add('horizontal-grid');
+                grid.style.top = `${-10}vh`;
+            } else {
+                grid.classList.add('vertical-grid');
+                grid.style.left = `${-10}vw`;
+            }
+            
+            document.body.appendChild(grid);
+            animateGrid(grid, isHorizontal);
+        }
+        
+        function animateGrid(grid, isHorizontal) {
+            const duration = Math.random() * 10000 + 15000;
+            
+            grid.style.transition = 'none';
+            
+            if (isHorizontal) {
+                grid.style.top = `-10vh`;
+                
+                setTimeout(() => {
+                    grid.style.transition = `all ${duration}ms linear`;
+                    grid.style.top = '120vh';
+                    
+                    setTimeout(() => {
+                        animateGrid(grid, isHorizontal);
+                    }, duration);
+                }, 50);
+            } else {
+                grid.style.left = `-10vw`;
+                
+                setTimeout(() => {
+                    grid.style.transition = `all ${duration}ms linear`;
+                    grid.style.left = '120vw';
+                    
+                    setTimeout(() => {
+                        animateGrid(grid, isHorizontal);
+                    }, duration);
+                }, 50);
+            }
+        }
+        
+        function createAndAnimateEnergyOrb() {
+            const orb = document.createElement('div');
+            orb.classList.add('energy-orb');
+            
+            const size = Math.random() * 70 + 30;
+            orb.style.width = `${size}px`;
+            orb.style.height = `${size}px`;
+            
+            document.body.appendChild(orb);
+            animateEnergyOrb(orb);
+        }
+        
+        function animateEnergyOrb(orb) {
+            const duration = Math.random() * 20000 + 15000;
+            const startX = Math.random() * 120 - 10;
+            const startY = Math.random() * 120 - 10;
+            const endX = Math.random() * 120 - 10;
+            const endY = Math.random() * 120 - 10;
+            
+            orb.style.transition = 'none';
+            orb.style.left = `${startX}vw`;
+            orb.style.top = `${startY}vh`;
+            orb.style.opacity = Math.random() * 0.3 + 0.1;
+            
+            setTimeout(() => {
+                orb.style.transition = `all ${duration}ms linear`;
+                orb.style.left = `${endX}vw`;
+                orb.style.top = `${endY}vh`;
+                
+                setTimeout(() => {
+                    animateEnergyOrb(orb);
+                }, duration);
+            }, 50);
+        }
+        
+        function createAndAnimateDustParticle() {
+            const dust = document.createElement('div');
+            dust.classList.add('dust-particle');
+            
+            const size = Math.random() * 4 + 1;
+            dust.style.width = `${size}px`;
+            dust.style.height = `${size}px`;
+            
+            document.body.appendChild(dust);
+            animateDustParticle(dust);
+        }
+        
+        function animateDustParticle(dust) {
+            const duration = Math.random() * 8000 + 7000;
+            const startX = Math.random() * 100;
+            const startY = -10;
+            const endX = startX + (Math.random() * 20 - 10);
+            
+            dust.style.transition = 'none';
+            dust.style.left = `${startX}vw`;
+            dust.style.top = `${startY}vh`;
+            dust.style.opacity = Math.random() * 0.6 + 0.2;
+            
+            setTimeout(() => {
+                dust.style.transition = `all ${duration}ms linear`;
+                dust.style.left = `${endX}vw`;
+                dust.style.top = '110vh';
+                
+                setTimeout(() => {
+                    animateDustParticle(dust);
+                }, duration);
+            }, 50);
+        }
+        
+        // Create and manage mouse follower
+        function createMouseFollower() {
+            const follower = document.createElement('div');
+            follower.classList.add('mouse-follower');
+            document.body.appendChild(follower);
+            
+            // Initial position off-screen
+            let mouseX = -100;
+            let mouseY = -100;
+            let posX = -100;
+            let posY = -100;
+            
+            // Track mouse position
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            
+            // Animate the follower with slight delay for smooth effect
+            function updateFollowerPosition() {
+                // Smooth following with easing effect
+                posX += (mouseX - posX) * 0.1;
+                posY += (mouseY - posY) * 0.1;
+                
+                // Apply position
+                follower.style.left = posX + 'px';
+                follower.style.top = posY + 'px';
+                
+                // Add slight pulsing effect based on mouse velocity
+                const distance = Math.sqrt(
+                    Math.pow(mouseX - posX, 2) + Math.pow(mouseY - posY, 2)
+                );
+                const scale = 1 + Math.min(distance * 0.01, 0.5);
+                follower.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                
+                // Continue animation
+                requestAnimationFrame(updateFollowerPosition);
+            }
+            
+            // Start animation loop
+            updateFollowerPosition();
+            
+            return follower;
+        }
+        
+        // Initialize how-to-play modal
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            createMouseFollower();
+            
+            // Setup how to play modal
+            const howToPlayButton = document.getElementById('how-to-play');
+            const howToPlayModal = new bootstrap.Modal(document.getElementById('howToPlayModal'));
+            
+            howToPlayButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                howToPlayModal.show();
+            });
+        });
+    </script>
 </body>
 </html>
