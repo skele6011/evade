@@ -42,6 +42,7 @@ const COLORS = {
 };
 
 let roundedTime;
+let ballCount = 15;
 
 class startScene extends Phaser.Scene {
     constructor() {
@@ -80,11 +81,11 @@ class startScene extends Phaser.Scene {
             });
         }
 
-        // Game over container for animation
-        const gameOverContainer = this.add.container(config.width / 2, config.height / 2 - 100);
+        // Game title container for animation
+        const gameTitleContainer = this.add.container(config.width / 2, config.height / 2 - 150);
 
-        // Game over text
-        const gameOverText = this.add.text(0, 0, 'EVADE', {
+        // Game title text
+        const gameTitleText = this.add.text(0, 0, 'EVADE', {
             fontFamily: 'Arial Black',
             fontSize: '78px',
             color: '#ff0000',
@@ -101,45 +102,51 @@ class startScene extends Phaser.Scene {
         underline.lineTo(150, 50);
         underline.strokePath();
 
-        gameOverContainer.add([gameOverText, underline]);
+        gameTitleContainer.add([gameTitleText, underline]);
 
-        // Score text
-        const scoreText = this.add.text(config.width / 2, config.height / 2, `TEXT`, {
+        // Difficulty selection text
+        const difficultyText = this.add.text(config.width / 2, config.height / 2 - 40, 'SELECT DIFFICULTY:', {
             fontFamily: 'Arial',
-            fontSize: '32px',
+            fontSize: '24px',
             color: '#ffffff',
             stroke: '#000000',
-            strokeThickness: 4
-        }).setOrigin(0.5).setVisible(false);
+            strokeThickness: 3
+        }).setOrigin(0.5);
 
-        // Play again button
-        const playAgainButton = this.add.text(config.width / 2, config.height / 2 + 100, 'PLAY', {
-            fontFamily: 'Arial',
-            fontSize: '36px',
-            color: '#ffffff',
-            backgroundColor: '#4a4a4a',
-            padding: { x: 20, y: 10 },
-            stroke: '#000000',
-            strokeThickness: 2
-        }).setOrigin(0.5)
-          .setInteractive({ useHandCursor: true });
+        // Create difficulty buttons
+        // Easy button
+        const easyButton = this.createDifficultyButton(
+            config.width / 2 - 150, 
+            config.height / 2 + 20, 
+            'EASY', 
+            0x4CAF50, 
+            0x66BB6A,
+            15
+        );
 
-        // Button interactions
-        playAgainButton.on('pointerover', () => {
-            playAgainButton.setStyle({ backgroundColor: '#666666' });
-            playAgainButton.setScale(1.1);
-        });
-        playAgainButton.on('pointerout', () => {
-            playAgainButton.setStyle({ backgroundColor: '#4a4a4a' });
-            playAgainButton.setScale(1);
-        });
-        playAgainButton.on('pointerdown', () => {
-            this.scene.start('gameScene');
-        });
+        // Medium button
+        const mediumButton = this.createDifficultyButton(
+            config.width / 2, 
+            config.height / 2 + 20, 
+            'MEDIUM', 
+            0xFFC107, 
+            0xFFD54F,
+            35
+        );
+
+        // Hard button
+        const hardButton = this.createDifficultyButton(
+            config.width / 2 + 150, 
+            config.height / 2 + 20, 
+            'HARD', 
+            0xF44336, 
+            0xEF5350,
+            70
+        );
 
         // Animations
         this.tweens.add({
-            targets: gameOverContainer,
+            targets: gameTitleContainer,
             scaleX: { from: 0, to: 1 },
             scaleY: { from: 0, to: 1 },
             duration: 800,
@@ -147,27 +154,65 @@ class startScene extends Phaser.Scene {
         });
 
         this.tweens.add({
-            targets: scoreText,
+            targets: difficultyText,
             alpha: { from: 0, to: 1 },
-            y: { from: config.height / 2 - 30, to: config.height / 2 },
-            duration: 1000,
+            y: { from: config.height / 2 - 60, to: config.height / 2 - 40 },
+            duration: 800,
             delay: 800,
             ease: 'Power2'
         });
 
+        // Animate buttons with slight delay between each
         this.tweens.add({
-            targets: playAgainButton,
+            targets: [easyButton, mediumButton, hardButton],
             alpha: { from: 0, to: 1 },
-            y: { from: config.height / 2 + 130, to: config.height / 2 + 100 },
-            duration: 1000,
-            delay: 1200,
-            ease: 'Power2'
+            y: { from: config.height / 2 + 40, to: config.height / 2 + 20 },
+            duration: 800,
+            delay: function(i) { return 1000 + i * 200; },
+            ease: 'Back.out'
         });
     }
+
+    createDifficultyButton(x, y, text, bgColor, hoverColor, difficulty) {
+        // Convert hex colors to hex strings for text objects
+        const bgColorStr = '#' + bgColor.toString(16).padStart(6, '0');
+        const hoverColorStr = '#' + hoverColor.toString(16).padStart(6, '0');
+
+        const button = this.add.text(x, y, text, {
+            fontFamily: 'Arial',
+            fontSize: '24px',
+            color: '#ffffff',
+            backgroundColor: bgColorStr,
+            padding: { x: 20, y: 10 },
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5)
+          .setInteractive({ useHandCursor: true });
+
+        // Button interactions
+        button.on('pointerover', () => {
+            button.setStyle({ backgroundColor: hoverColorStr });
+            button.setScale(1.1);
+        });
+        
+        button.on('pointerout', () => {
+            button.setStyle({ backgroundColor: bgColorStr });
+            button.setScale(1);
+        });
+        
+        button.on('pointerdown', () => {
+            ballCount = difficulty;
+            this.scene.start('gameScene');
+        });
+
+        return button;
+    }
+
     update() {
         this.input.setDefaultCursor('default');
     }
 }
+
 class gameScene extends Phaser.Scene {
     constructor() {
         super('gameScene');
@@ -235,7 +280,7 @@ class gameScene extends Phaser.Scene {
 
         this.balls = this.physics.add.group();
         
-        for (let i = 0; i <= 10; i++) {
+        for (let i = 0; i <= ballCount; i++) {
             const x = Phaser.Math.Between(20, config.width - 20);
             const y = Phaser.Math.Between(20, config.height - 20);
             
@@ -475,6 +520,41 @@ class loseScene extends Phaser.Scene {
             strokeThickness: 2
         }).setOrigin(0.5)
           .setInteractive({ useHandCursor: true });
+
+        // Main Menu button below the Try Again button
+        const mainMenuButton = this.add.text(config.width / 2, config.height / 2 + 180, 'MAIN MENU', {
+            fontFamily: 'Arial',
+            fontSize: '24px',
+            color: '#ffffff',
+            backgroundColor: COLORS.BUTTON_BG,
+            padding: { x: 20, y: 10 },
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5)
+          .setInteractive({ useHandCursor: true });
+          
+        // Main Menu button interactions
+        mainMenuButton.on('pointerover', () => {
+            mainMenuButton.setStyle({ backgroundColor: COLORS.BUTTON_HOVER });
+            mainMenuButton.setScale(1.1);
+        });
+        mainMenuButton.on('pointerout', () => {
+            mainMenuButton.setStyle({ backgroundColor: COLORS.BUTTON_BG });
+            mainMenuButton.setScale(1);
+        });
+        mainMenuButton.on('pointerdown', () => {
+            this.scene.start('startScene');
+        });
+        
+        // Animate the main menu button with a delay after the play again button
+        this.tweens.add({
+            targets: mainMenuButton,
+            alpha: { from: 0, to: 1 },
+            y: { from: config.height / 2 + 230, to: config.height / 2 + 180 },
+            duration: 800,
+            delay: 1800,
+            ease: 'Back.out'
+        });
 
         // Button interactions
         playAgainButton.on('pointerover', () => {
