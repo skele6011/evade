@@ -731,7 +731,7 @@ const config = {
     },
     fps: 60,
     scene: [
-        gameScene, loseScene, pauseScene, startScene
+        startScene, gameScene, pauseScene, loseScene
     ],
     backgroundColor: COLORS.BG_GAME
 };
