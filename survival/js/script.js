@@ -357,6 +357,14 @@ class gameScene extends Phaser.Scene {
         this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
         this.qKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
         this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        this.upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+        this.downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+        this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+        this.leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+        this.wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        this.sKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.aKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.dKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     }
 
     update(){
@@ -389,6 +397,18 @@ class gameScene extends Phaser.Scene {
             this.scene.launch('pauseScene');
             this.scene.pause('gameScene');
             console.log('pause');
+        }
+        if (this.upKey.isDown || this.wKey.isDown) {
+            this.playerContainer.body.setVelocityY(-300);
+        }
+        if (this.downKey.isDown || this.sKey.isDown) {
+            this.playerContainer.body.setVelocityY(300);
+        }
+        if (this.leftKey.isDown || this.aKey.isDown) {
+            this.playerContainer.body.setVelocityX(-300);
+        }
+        if (this.rightKey.isDown || this.dKey.isDown) {
+            this.playerContainer.body.setVelocityX(300);
         }
     }
     forceScene() {
@@ -731,7 +751,7 @@ const config = {
     },
     fps: 60,
     scene: [
-        startScene, gameScene, pauseScene, loseScene
+        gameScene, startScene, pauseScene, loseScene
     ],
     backgroundColor: COLORS.BG_GAME
 };
